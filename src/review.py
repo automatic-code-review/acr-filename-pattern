@@ -22,7 +22,10 @@ def review(config):
             continue
 
         new_path = change['new_path']
-        filename = new_path[new_path.rindex('/') + 1:]
+        if "/" in new_path:
+            filename = new_path[new_path.rindex('/') + 1:]
+        else:
+            filename = new_path
 
         for rule in rules:
             if not re.match(rule['name'], new_path):
