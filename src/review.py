@@ -1,25 +1,47 @@
+import re
+
 import automatic_code_review_commons as commons
 
-def review(config):
-    path_target = config['path_target']
-    path_source = config['path_source']
 
+def __is_pattern(patterns, name):
+    for pattern in patterns:
+        if re.match(pattern, name):
+            return True
+
+    return False
+
+
+def review(config):
     merge = config['merge']
-    project_id = merge['project_id']
-    merge_request_id = merge['merge_request_id']
-    
+
     comments = []
-    
-    # TODO IMPLEMENTAR EXTENSION
-    #  O OBJETO DE COMENTARIO DEVE POSSUIR O SEGUINTE FORMATO
-    #  commons.comment_create(
-    #     comment_id=commons.comment_generate_id( "" ),
-    #     comment_path="",
-    #     comment_description="",
-    #     comment_snipset=True,
-    #     comment_end_line=1,
-    #     comment_start_line=1,
-    #     comment_language="",
-    # )
+    rules = config['rules']
+
+    for change in merge['changes']:
+        if change['deleted_file']:
+            continue
+
+        new_path = change['new_path']
+        filename = new_path[new_path.rindex('/') + 1:]
+
+        for rule in rules:
+            if not re.match(rule['name'], new_path):
+                continue
+
+            if __is_pattern(rule['pattern'], filename):
+                continue
+
+            comment_description = rule['comment']
+            comment_description = comment_description.replace("${FILE_PATH}", new_path)
+
+            comments.append(commons.comment_create(
+                comment_id=commons.comment_generate_id(comment_description),
+                comment_path=new_path,
+                comment_description=comment_description,
+                comment_snipset=False,
+                comment_end_line=1,
+                comment_start_line=1,
+                comment_language="",
+            ))
 
     return comments
